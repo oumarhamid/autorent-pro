@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: autorent-backend
+  profiles:
+    default: dev
+
+server:
+  port: ${BACKEND_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
