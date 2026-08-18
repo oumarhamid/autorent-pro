@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface UserRoleRepository
@@ -36,6 +37,11 @@ public interface UserRoleRepository
     );
 
     boolean existsByUserIdAndRoleId(
+            UUID userId,
+            UUID roleId
+    );
+
+    Optional<UserRole> findByUserIdAndRoleId(
             UUID userId,
             UUID roleId
     );

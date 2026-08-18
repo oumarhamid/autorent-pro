@@ -2,14 +2,17 @@ package com.autorentpro.identity.api;
 
 import com.autorentpro.identity.application.UserAdministrationService;
 import com.autorentpro.identity.application.UserView;
+import com.autorentpro.identity.domain.model.RoleCode;
 import com.autorentpro.identity.infrastructure.security.AuthenticatedUserPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -127,6 +130,52 @@ public class UserController {
         return UserResponse.from(
                 userAdministrationService
                         .enableUser(userId)
+        );
+    }
+
+    @PutMapping("/{userId}/roles/{role}")
+    @PreAuthorize(
+            "@identityAuthorization.canAccessGlobal("
+                    + "authentication, 'USER_ROLE_ASSIGN')"
+    )
+    public UserResponse assignRole(
+            @PathVariable
+            UUID userId,
+
+            @PathVariable
+            RoleCode role
+    ) {
+        return UserResponse.from(
+                userAdministrationService
+                        .assignRole(
+                                userId,
+                                role
+                        )
+        );
+    }
+
+    @DeleteMapping("/{userId}/roles/{role}")
+    @PreAuthorize(
+            "@identityAuthorization.canAccessGlobal("
+                    + "authentication, 'USER_ROLE_ASSIGN')"
+    )
+    public UserResponse removeRole(
+            @PathVariable
+            UUID userId,
+
+            @PathVariable
+            RoleCode role,
+
+            @AuthenticationPrincipal
+            AuthenticatedUserPrincipal principal
+    ) {
+        return UserResponse.from(
+                userAdministrationService
+                        .removeRole(
+                                principal.userId(),
+                                userId,
+                                role
+                        )
         );
     }
 }

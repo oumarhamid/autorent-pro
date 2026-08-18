@@ -284,6 +284,120 @@ public class UserAdministrationService {
         );
     }
 
+    @Transactional
+    public UserView assignRole(
+            UUID targetUserId,
+            RoleCode roleCode
+    ) {
+        if (targetUserId == null) {
+            throw userNotFound();
+        }
+
+        if (roleCode == null) {
+            throw roleNotAvailable();
+        }
+
+        UserAccount user =
+                userAccountRepository
+                        .findForUpdateById(targetUserId)
+                        .orElseThrow(
+                                this::userNotFound
+                        );
+
+        Role role =
+                roleRepository
+                        .findByCode(roleCode)
+                        .orElseThrow(
+                                this::roleNotAvailable
+                        );
+
+        boolean alreadyAssigned =
+                userRoleRepository
+                        .existsByUserIdAndRoleId(
+                                targetUserId,
+                                role.getId()
+                        );
+
+        if (!alreadyAssigned) {
+            userRoleRepository
+                    .saveAndFlush(
+                            UserRole.assign(
+                                    user,
+                                    role
+                            )
+                    );
+        }
+
+        return toView(
+                user,
+                loadUserRoles(targetUserId)
+        );
+    }
+
+    @Transactional
+    public UserView removeRole(
+            UUID authenticatedUserId,
+            UUID targetUserId,
+            RoleCode roleCode
+    ) {
+        if (authenticatedUserId == null) {
+            throw new UserManagementException(
+                    "AUTHENTICATED_USER_REQUIRED",
+                    "The authenticated user is required."
+            );
+        }
+
+        if (targetUserId == null) {
+            throw userNotFound();
+        }
+
+        if (roleCode == null) {
+            throw roleNotAvailable();
+        }
+
+        if (authenticatedUserId.equals(targetUserId)
+                && roleCode == RoleCode.ADMIN) {
+            throw new UserManagementException(
+                    "SELF_ADMIN_ROLE_REMOVAL_NOT_ALLOWED",
+                    "You cannot remove your own administrator role."
+            );
+        }
+
+        UserAccount user =
+                userAccountRepository
+                        .findForUpdateById(targetUserId)
+                        .orElseThrow(
+                                this::userNotFound
+                        );
+
+        Role role =
+                roleRepository
+                        .findByCode(roleCode)
+                        .orElseThrow(
+                                this::roleNotAvailable
+                        );
+
+        userRoleRepository
+                .findByUserIdAndRoleId(
+                        targetUserId,
+                        role.getId()
+                )
+                .ifPresent(
+                        assignment -> {
+                            userRoleRepository.delete(
+                                    assignment
+                            );
+
+                            userRoleRepository.flush();
+                        }
+                );
+
+        return toView(
+                user,
+                loadUserRoles(targetUserId)
+        );
+    }
+
     private Set<RoleCode> loadUserRoles(
             UUID userId
     ) {
@@ -356,6 +470,13 @@ public class UserAdministrationService {
         return new UserManagementException(
                 "EMAIL_ALREADY_IN_USE",
                 "An account already exists for this email."
+        );
+    }
+
+    private UserManagementException roleNotAvailable() {
+        return new UserManagementException(
+                "ROLE_NOT_AVAILABLE",
+                "The requested role is not available."
         );
     }
 

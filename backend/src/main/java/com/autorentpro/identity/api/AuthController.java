@@ -1,5 +1,7 @@
 package com.autorentpro.identity.api;
 
+import com.autorentpro.identity.application.IdentityAccessService;
+import com.autorentpro.identity.application.ResolvedIdentityAccess;
 import com.autorentpro.identity.infrastructure.security.AuthenticatedUserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,23 +32,37 @@ public class AuthController {
     private final SecurityContextRepository securityContextRepository;
     private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
     private final LogoutHandler logoutHandler;
+    private final IdentityAccessService identityAccessService;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository,
             SessionAuthenticationStrategy sessionAuthenticationStrategy,
-            LogoutHandler logoutHandler
+            LogoutHandler logoutHandler,
+            IdentityAccessService identityAccessService
     ) {
-        this.authenticationManager = authenticationManager;
-        this.securityContextRepository = securityContextRepository;
+        this.authenticationManager =
+                authenticationManager;
+
+        this.securityContextRepository =
+                securityContextRepository;
+
         this.sessionAuthenticationStrategy =
                 sessionAuthenticationStrategy;
-        this.logoutHandler = logoutHandler;
+
+        this.logoutHandler =
+                logoutHandler;
+
+        this.identityAccessService =
+                identityAccessService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @Valid @RequestBody LoginRequest loginRequest,
+            @Valid
+            @RequestBody
+            LoginRequest loginRequest,
+
             HttpServletRequest request,
             HttpServletResponse response
     ) {
@@ -60,11 +76,12 @@ public class AuthController {
                                     )
                     );
 
-            sessionAuthenticationStrategy.onAuthentication(
-                    authentication,
-                    request,
-                    response
-            );
+            sessionAuthenticationStrategy
+                    .onAuthentication(
+                            authentication,
+                            request,
+                            response
+                    );
 
             SecurityContext securityContext =
                     SecurityContextHolder
@@ -78,20 +95,29 @@ public class AuthController {
                     securityContext
             );
 
-            securityContextRepository.saveContext(
-                    securityContext,
-                    request,
-                    response
-            );
+            securityContextRepository
+                    .saveContext(
+                            securityContext,
+                            request,
+                            response
+                    );
 
             AuthenticatedUserPrincipal principal =
                     (AuthenticatedUserPrincipal)
                             authentication.getPrincipal();
 
-            return ResponseEntity.ok(
-                    CurrentUserResponse.from(principal)
-            );
+            ResolvedIdentityAccess access =
+                    identityAccessService
+                            .resolveForUser(
+                                    principal.userId()
+                            );
 
+            return ResponseEntity.ok(
+                    CurrentUserResponse.from(
+                            principal,
+                            access
+                    )
+            );
         } catch (AuthenticationException exception) {
             SecurityContextHolder.clearContext();
 
@@ -114,7 +140,16 @@ public class AuthController {
             @AuthenticationPrincipal
             AuthenticatedUserPrincipal principal
     ) {
-        return CurrentUserResponse.from(principal);
+        ResolvedIdentityAccess access =
+                identityAccessService
+                        .resolveForUser(
+                                principal.userId()
+                        );
+
+        return CurrentUserResponse.from(
+                principal,
+                access
+        );
     }
 
     @PostMapping("/logout")
@@ -129,6 +164,8 @@ public class AuthController {
                 authentication
         );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

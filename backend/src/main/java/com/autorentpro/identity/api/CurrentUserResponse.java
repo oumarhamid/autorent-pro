@@ -1,6 +1,7 @@
 package com.autorentpro.identity.api;
 
 import com.autorentpro.identity.application.PermissionGrant;
+import com.autorentpro.identity.application.ResolvedIdentityAccess;
 import com.autorentpro.identity.domain.model.RoleCode;
 import com.autorentpro.identity.infrastructure.security.AuthenticatedUserPrincipal;
 
@@ -15,14 +16,20 @@ public record CurrentUserResponse(
         boolean mustChangePassword
 ) {
 
+    public CurrentUserResponse {
+        roles = Set.copyOf(roles);
+        permissions = Set.copyOf(permissions);
+    }
+
     public static CurrentUserResponse from(
-            AuthenticatedUserPrincipal principal
+            AuthenticatedUserPrincipal principal,
+            ResolvedIdentityAccess access
     ) {
         return new CurrentUserResponse(
                 principal.userId(),
                 principal.email(),
-                principal.roles(),
-                principal.permissions(),
+                access.roles(),
+                access.permissions(),
                 principal.mustChangePassword()
         );
     }
