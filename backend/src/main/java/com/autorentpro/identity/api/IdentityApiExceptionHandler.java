@@ -1,9 +1,11 @@
 package com.autorentpro.identity.api;
 
 import com.autorentpro.identity.application.PasswordChangeException;
+import com.autorentpro.identity.application.UserManagementException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -27,16 +29,40 @@ public class IdentityApiExceptionHandler {
                         ? HttpStatus.FORBIDDEN
                         : HttpStatus.BAD_REQUEST;
 
-        return ResponseEntity
-                .status(status)
-                .body(
-                        SecurityErrorResponse.of(
-                                status.value(),
-                                exception.getCode(),
-                                exception.getMessage(),
-                                request.getRequestURI()
-                        )
-                );
+        return error(
+                status,
+                exception.getCode(),
+                exception.getMessage(),
+                request
+        );
+    }
+
+    @ExceptionHandler(
+            UserManagementException.class
+    )
+    public ResponseEntity<SecurityErrorResponse>
+    handleUserManagementException(
+            UserManagementException exception,
+            HttpServletRequest request
+    ) {
+        HttpStatus status =
+                switch (exception.getCode()) {
+                    case "USER_NOT_FOUND" ->
+                            HttpStatus.NOT_FOUND;
+
+                    case "EMAIL_ALREADY_IN_USE" ->
+                            HttpStatus.CONFLICT;
+
+                    default ->
+                            HttpStatus.BAD_REQUEST;
+                };
+
+        return error(
+                status,
+                exception.getCode(),
+                exception.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(
@@ -47,16 +73,43 @@ public class IdentityApiExceptionHandler {
             MethodArgumentNotValidException exception,
             HttpServletRequest request
     ) {
-        HttpStatus status =
-                HttpStatus.BAD_REQUEST;
+        return error(
+                HttpStatus.BAD_REQUEST,
+                "VALIDATION_FAILED",
+                "The request is invalid.",
+                request
+        );
+    }
 
+    @ExceptionHandler(
+            HttpMessageNotReadableException.class
+    )
+    public ResponseEntity<SecurityErrorResponse>
+    handleUnreadableRequest(
+            HttpMessageNotReadableException exception,
+            HttpServletRequest request
+    ) {
+        return error(
+                HttpStatus.BAD_REQUEST,
+                "VALIDATION_FAILED",
+                "The request is invalid.",
+                request
+        );
+    }
+
+    private ResponseEntity<SecurityErrorResponse> error(
+            HttpStatus status,
+            String code,
+            String message,
+            HttpServletRequest request
+    ) {
         return ResponseEntity
                 .status(status)
                 .body(
                         SecurityErrorResponse.of(
                                 status.value(),
-                                "VALIDATION_FAILED",
-                                "The request is invalid.",
+                                code,
+                                message,
                                 request.getRequestURI()
                         )
                 );

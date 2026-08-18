@@ -5,6 +5,7 @@ import com.autorentpro.identity.domain.model.PermissionCode;
 import com.autorentpro.identity.domain.model.PermissionScope;
 import com.autorentpro.identity.domain.model.RoleCode;
 import com.autorentpro.identity.infrastructure.persistence.RolePermissionRepository;
+import com.autorentpro.identity.infrastructure.persistence.RoleRepository;
 import com.autorentpro.identity.infrastructure.persistence.UserAccountRepository;
 import com.autorentpro.identity.infrastructure.persistence.UserRoleRepository;
 import com.autorentpro.identity.infrastructure.security.AuthenticatedUserPrincipal;
@@ -45,7 +46,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @MockitoBean(types = {
         UserAccountRepository.class,
         UserRoleRepository.class,
-        RolePermissionRepository.class
+        RolePermissionRepository.class,
+        RoleRepository.class
 })
 class MethodAuthorizationIntegrationTest {
 
