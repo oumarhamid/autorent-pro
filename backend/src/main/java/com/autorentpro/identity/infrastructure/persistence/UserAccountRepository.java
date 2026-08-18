@@ -26,4 +26,14 @@ public interface UserAccountRepository
     Optional<UserAccount> findForAuthenticationByEmail(
             @Param("email") String email
     );
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select account
+            from UserAccount account
+            where account.id = :userId
+            """)
+    Optional<UserAccount> findForUpdateById(
+            @Param("userId") UUID userId
+    );
+
 }
