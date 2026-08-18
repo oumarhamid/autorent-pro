@@ -45,4 +45,13 @@ public interface UserRoleRepository
             UUID userId,
             UUID roleId
     );
+
+    @Query("""
+            select count(ur)
+            from UserRole ur
+            where ur.role.code = :roleCode
+            """)
+    long countByRoleCode(
+            @Param("roleCode") RoleCode roleCode
+    );
 }
