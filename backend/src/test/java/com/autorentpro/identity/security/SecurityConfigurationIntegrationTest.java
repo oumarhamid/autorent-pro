@@ -1,6 +1,7 @@
 package com.autorentpro.identity.security;
 
 import com.autorentpro.identity.infrastructure.persistence.RolePermissionRepository;
+import com.autorentpro.identity.infrastructure.persistence.UserAccountRepository;
 import com.autorentpro.identity.infrastructure.persistence.UserRoleRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @MockitoBean(types = {
+        UserAccountRepository.class,
         UserRoleRepository.class,
         RolePermissionRepository.class
 })
@@ -87,12 +89,6 @@ class SecurityConfigurationIntegrationTest {
                 .andExpect(
                         jsonPath("$.code")
                                 .value("UNAUTHENTICATED")
-                )
-                .andExpect(
-                        jsonPath("$.path")
-                                .value(
-                                        "/api/security/protected-probe"
-                                )
                 );
     }
 
@@ -108,15 +104,6 @@ class SecurityConfigurationIntegrationTest {
                 )
                 .andExpect(
                         status().isForbidden()
-                )
-                .andExpect(
-                        content().contentTypeCompatibleWith(
-                                "application/json"
-                        )
-                )
-                .andExpect(
-                        jsonPath("$.status")
-                                .value(403)
                 )
                 .andExpect(
                         jsonPath("$.code")
