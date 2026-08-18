@@ -1,5 +1,6 @@
 package com.autorentpro.identity.security;
 
+import com.autorentpro.identity.application.ActiveAccountStatusService;
 import com.autorentpro.identity.application.PermissionGrant;
 import com.autorentpro.identity.domain.model.PermissionCode;
 import com.autorentpro.identity.domain.model.PermissionScope;
@@ -9,21 +10,22 @@ import com.autorentpro.identity.infrastructure.persistence.RoleRepository;
 import com.autorentpro.identity.infrastructure.persistence.UserAccountRepository;
 import com.autorentpro.identity.infrastructure.persistence.UserRoleRepository;
 import com.autorentpro.identity.infrastructure.security.AuthenticatedUserPrincipal;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,6 +35,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -42,17 +46,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(MethodAuthorizationIntegrationTest.AuthorizationTestConfiguration.class)
+@Import(
+        MethodAuthorizationIntegrationTest.AuthorizationTestConfiguration.class
+)
 @MockitoBean(types = {
         UserAccountRepository.class,
         UserRoleRepository.class,
         RolePermissionRepository.class,
-        RoleRepository.class
+        RoleRepository.class,
+        ActiveAccountStatusService.class
 })
 class MethodAuthorizationIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @Autowired
+    ActiveAccountStatusService activeAccountStatusService;
+
+    @BeforeEach
+    void allowSyntheticAuthenticatedUsers() {
+        when(
+                activeAccountStatusService.isActive(
+                        any(UUID.class)
+                )
+        ).thenReturn(true);
+    }
 
     @Test
     void unauthenticatedRequestReturns401()
@@ -77,12 +96,15 @@ class MethodAuthorizationIntegrationTest {
     void selfPermissionAllowsOwnResource()
             throws Exception {
 
-        UUID userId = UUID.randomUUID();
+        UUID userId =
+                UUID.randomUUID();
 
         Authentication authentication =
-                createAuthentication(
+                authenticationFor(
                         userId,
-                        Set.of(RoleCode.CLIENT),
+                        Set.of(
+                                RoleCode.CLIENT
+                        ),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.ACCOUNT_READ,
@@ -97,7 +119,9 @@ class MethodAuthorizationIntegrationTest {
                                 userId
                         )
                                 .with(
-                                        authentication(authentication)
+                                        authentication(
+                                                authentication
+                                        )
                                 )
                 )
                 .andExpect(
@@ -117,13 +141,15 @@ class MethodAuthorizationIntegrationTest {
         UUID authenticatedUserId =
                 UUID.randomUUID();
 
-        UUID anotherUserId =
+        UUID requestedUserId =
                 UUID.randomUUID();
 
         Authentication authentication =
-                createAuthentication(
+                authenticationFor(
                         authenticatedUserId,
-                        Set.of(RoleCode.CLIENT),
+                        Set.of(
+                                RoleCode.CLIENT
+                        ),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.ACCOUNT_READ,
@@ -135,10 +161,12 @@ class MethodAuthorizationIntegrationTest {
         mockMvc.perform(
                         get(
                                 "/api/test/authorization/account/{userId}",
-                                anotherUserId
+                                requestedUserId
                         )
                                 .with(
-                                        authentication(authentication)
+                                        authentication(
+                                                authentication
+                                        )
                                 )
                 )
                 .andExpect(
@@ -161,9 +189,11 @@ class MethodAuthorizationIntegrationTest {
                 UUID.randomUUID();
 
         Authentication authentication =
-                createAuthentication(
+                authenticationFor(
                         managerId,
-                        Set.of(RoleCode.MANAGER),
+                        Set.of(
+                                RoleCode.MANAGER
+                        ),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.USER_READ,
@@ -178,7 +208,9 @@ class MethodAuthorizationIntegrationTest {
                                 requestedUserId
                         )
                                 .with(
-                                        authentication(authentication)
+                                        authentication(
+                                                authentication
+                                        )
                                 )
                 )
                 .andExpect(
@@ -196,9 +228,11 @@ class MethodAuthorizationIntegrationTest {
             throws Exception {
 
         Authentication authentication =
-                createAuthentication(
+                authenticationFor(
                         UUID.randomUUID(),
-                        Set.of(RoleCode.AGENCY_MANAGER),
+                        Set.of(
+                                RoleCode.AGENCY_MANAGER
+                        ),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.USER_READ,
@@ -213,7 +247,9 @@ class MethodAuthorizationIntegrationTest {
                                 UUID.randomUUID()
                         )
                                 .with(
-                                        authentication(authentication)
+                                        authentication(
+                                                authentication
+                                        )
                                 )
                 )
                 .andExpect(
@@ -230,9 +266,11 @@ class MethodAuthorizationIntegrationTest {
             throws Exception {
 
         Authentication authentication =
-                createAuthentication(
+                authenticationFor(
                         UUID.randomUUID(),
-                        Set.of(RoleCode.CLIENT),
+                        Set.of(
+                                RoleCode.CLIENT
+                        ),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.ACCOUNT_READ,
@@ -247,7 +285,9 @@ class MethodAuthorizationIntegrationTest {
                                 UUID.randomUUID()
                         )
                                 .with(
-                                        authentication(authentication)
+                                        authentication(
+                                                authentication
+                                        )
                                 )
                 )
                 .andExpect(
@@ -264,9 +304,11 @@ class MethodAuthorizationIntegrationTest {
             throws Exception {
 
         Authentication authentication =
-                createAuthentication(
+                authenticationFor(
                         UUID.randomUUID(),
-                        Set.of(RoleCode.ADMIN),
+                        Set.of(
+                                RoleCode.ADMIN
+                        ),
                         Set.of()
                 );
 
@@ -275,14 +317,18 @@ class MethodAuthorizationIntegrationTest {
                                 "/api/test/authorization/admin"
                         )
                                 .with(
-                                        authentication(authentication)
+                                        authentication(
+                                                authentication
+                                        )
                                 )
                 )
                 .andExpect(
                         status().isOk()
                 )
                 .andExpect(
-                        content().string("admin")
+                        content().string(
+                                "admin"
+                        )
                 );
     }
 
@@ -291,9 +337,11 @@ class MethodAuthorizationIntegrationTest {
             throws Exception {
 
         Authentication authentication =
-                createAuthentication(
+                authenticationFor(
                         UUID.randomUUID(),
-                        Set.of(RoleCode.CLIENT),
+                        Set.of(
+                                RoleCode.CLIENT
+                        ),
                         Set.of()
                 );
 
@@ -302,7 +350,9 @@ class MethodAuthorizationIntegrationTest {
                                 "/api/test/authorization/admin"
                         )
                                 .with(
-                                        authentication(authentication)
+                                        authentication(
+                                                authentication
+                                        )
                                 )
                 )
                 .andExpect(
@@ -314,7 +364,7 @@ class MethodAuthorizationIntegrationTest {
                 );
     }
 
-    private Authentication createAuthentication(
+    private Authentication authenticationFor(
             UUID userId,
             Set<RoleCode> roles,
             Set<PermissionGrant> permissions
@@ -339,13 +389,13 @@ class MethodAuthorizationIntegrationTest {
             );
         }
 
-        for (PermissionGrant grant : permissions) {
+        for (PermissionGrant permission : permissions) {
             authorities.add(
                     new SimpleGrantedAuthority(
                             "PERMISSION_"
-                                    + grant.permission().name()
+                                    + permission.permission().name()
                                     + "_"
-                                    + grant.scope().name()
+                                    + permission.scope().name()
                     )
             );
         }
@@ -358,7 +408,9 @@ class MethodAuthorizationIntegrationTest {
                 );
     }
 
-    @TestConfiguration(proxyBeanMethods = false)
+    @TestConfiguration(
+            proxyBeanMethods = false
+    )
     static class AuthorizationTestConfiguration {
 
         @Bean
@@ -384,7 +436,9 @@ class MethodAuthorizationIntegrationTest {
                         + "'ACCOUNT_READ', "
                         + "#userId)"
         )
-        String readOwnAccount(UUID userId) {
+        String readOwnAccount(
+                UUID userId
+        ) {
             return "account:" + userId;
         }
 
@@ -393,18 +447,24 @@ class MethodAuthorizationIntegrationTest {
                         + "authentication, "
                         + "'USER_READ')"
         )
-        String readAnyUser(UUID userId) {
+        String readAnyUser(
+                UUID userId
+        ) {
             return "user:" + userId;
         }
 
-        @PreAuthorize("hasRole('ADMIN')")
+        @PreAuthorize(
+                "hasRole('ADMIN')"
+        )
         String adminOnly() {
             return "admin";
         }
     }
 
     @RestController
-    @RequestMapping("/api/test/authorization")
+    @RequestMapping(
+            "/api/test/authorization"
+    )
     static class AuthorizationProbeController {
 
         private final AuthorizationProbeService authorizationProbeService;
@@ -416,23 +476,35 @@ class MethodAuthorizationIntegrationTest {
                     authorizationProbeService;
         }
 
-        @GetMapping("/account/{userId}")
+        @GetMapping(
+                "/account/{userId}"
+        )
         String account(
-                @PathVariable UUID userId
+                @PathVariable
+                UUID userId
         ) {
             return authorizationProbeService
-                    .readOwnAccount(userId);
+                    .readOwnAccount(
+                            userId
+                    );
         }
 
-        @GetMapping("/users/{userId}")
+        @GetMapping(
+                "/users/{userId}"
+        )
         String user(
-                @PathVariable UUID userId
+                @PathVariable
+                UUID userId
         ) {
             return authorizationProbeService
-                    .readAnyUser(userId);
+                    .readAnyUser(
+                            userId
+                    );
         }
 
-        @GetMapping("/admin")
+        @GetMapping(
+                "/admin"
+        )
         String admin() {
             return authorizationProbeService
                     .adminOnly();

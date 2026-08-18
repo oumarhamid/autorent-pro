@@ -50,7 +50,8 @@ public class IdentityApiExceptionHandler {
                     case "USER_NOT_FOUND" ->
                             HttpStatus.NOT_FOUND;
 
-                    case "EMAIL_ALREADY_IN_USE" ->
+                    case "EMAIL_ALREADY_IN_USE",
+                         "SELF_DISABLE_NOT_ALLOWED" ->
                             HttpStatus.CONFLICT;
 
                     default ->

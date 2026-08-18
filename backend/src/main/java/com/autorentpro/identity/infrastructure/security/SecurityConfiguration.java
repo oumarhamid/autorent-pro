@@ -12,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.logout.CompositeLogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
@@ -117,7 +118,8 @@ public class SecurityConfiguration {
             JsonAuthenticationEntryPoint authenticationEntryPoint,
             JsonAccessDeniedHandler accessDeniedHandler,
             SecurityContextRepository securityContextRepository,
-            CsrfTokenRepository csrfTokenRepository
+            CsrfTokenRepository csrfTokenRepository,
+            ActiveAccountFilter activeAccountFilter
     ) throws Exception {
 
         http
@@ -126,7 +128,6 @@ public class SecurityConfiguration {
                                 csrfTokenRepository
                         )
                 )
-
                 .securityContext(securityContext ->
                         securityContext
                                 .securityContextRepository(
@@ -134,13 +135,11 @@ public class SecurityConfiguration {
                                 )
                                 .requireExplicitSave(true)
                 )
-
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.IF_REQUIRED
                         )
                 )
-
                 .authorizeHttpRequests(authorize ->
                         authorize
                                 .requestMatchers(
@@ -153,7 +152,6 @@ public class SecurityConfiguration {
                                 .anyRequest()
                                 .authenticated()
                 )
-
                 .exceptionHandling(exceptions ->
                         exceptions
                                 .authenticationEntryPoint(
@@ -163,22 +161,23 @@ public class SecurityConfiguration {
                                         accessDeniedHandler
                                 )
                 )
-
                 .requestCache(cache ->
                         cache.disable()
                 )
-
                 .formLogin(
                         AbstractHttpConfigurer::disable
                 )
-
                 .httpBasic(
                         AbstractHttpConfigurer::disable
                 )
-
                 .logout(
                         AbstractHttpConfigurer::disable
                 );
+
+        http.addFilterBefore(
+                activeAccountFilter,
+                AuthorizationFilter.class
+        );
 
         return http.build();
     }

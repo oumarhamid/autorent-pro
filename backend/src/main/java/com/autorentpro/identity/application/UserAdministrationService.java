@@ -217,6 +217,84 @@ public class UserAdministrationService {
         );
     }
 
+    @Transactional
+    public UserView disableUser(
+            UUID authenticatedUserId,
+            UUID targetUserId
+    ) {
+        if (authenticatedUserId == null) {
+            throw new UserManagementException(
+                    "AUTHENTICATED_USER_REQUIRED",
+                    "The authenticated user is required."
+            );
+        }
+
+        if (targetUserId == null) {
+            throw userNotFound();
+        }
+
+        if (authenticatedUserId.equals(targetUserId)) {
+            throw new UserManagementException(
+                    "SELF_DISABLE_NOT_ALLOWED",
+                    "You cannot disable your own account."
+            );
+        }
+
+        UserAccount user =
+                userAccountRepository
+                        .findForUpdateById(targetUserId)
+                        .orElseThrow(
+                                this::userNotFound
+                        );
+
+        user.disable();
+
+        userAccountRepository
+                .saveAndFlush(user);
+
+        return toView(
+                user,
+                loadUserRoles(targetUserId)
+        );
+    }
+
+    @Transactional
+    public UserView enableUser(
+            UUID targetUserId
+    ) {
+        if (targetUserId == null) {
+            throw userNotFound();
+        }
+
+        UserAccount user =
+                userAccountRepository
+                        .findForUpdateById(targetUserId)
+                        .orElseThrow(
+                                this::userNotFound
+                        );
+
+        user.enable();
+
+        userAccountRepository
+                .saveAndFlush(user);
+
+        return toView(
+                user,
+                loadUserRoles(targetUserId)
+        );
+    }
+
+    private Set<RoleCode> loadUserRoles(
+            UUID userId
+    ) {
+        return Set.copyOf(
+                userRoleRepository
+                        .findRoleCodesByUserId(
+                                userId
+                        )
+        );
+    }
+
     private Map<UUID, Set<RoleCode>> loadRoles(
             Collection<UUID> userIds
     ) {
