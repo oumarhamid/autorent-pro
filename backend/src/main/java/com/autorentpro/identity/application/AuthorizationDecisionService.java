@@ -2,7 +2,7 @@ package com.autorentpro.identity.application;
 
 import com.autorentpro.identity.domain.model.PermissionCode;
 import com.autorentpro.identity.domain.model.PermissionScope;
-import com.autorentpro.identity.infrastructure.security.AuthenticatedUserPrincipal;
+import com.autorentpro.identity.domain.model.RoleCode;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -11,15 +11,30 @@ import java.util.UUID;
 @Service("authorizationDecisionService")
 public class AuthorizationDecisionService {
 
+    private final IdentityAccessService identityAccessService;
+
+    public AuthorizationDecisionService(
+            IdentityAccessService identityAccessService
+    ) {
+        this.identityAccessService =
+                identityAccessService;
+    }
+
     public boolean hasPermission(
-            AuthenticatedUserPrincipal principal,
+            UUID authenticatedUserId,
             PermissionCode permission
     ) {
-        if (principal == null || permission == null) {
+        if (authenticatedUserId == null
+                || permission == null) {
             return false;
         }
 
-        return principal.permissions()
+        ResolvedIdentityAccess access =
+                identityAccessService.resolveForUser(
+                        authenticatedUserId
+                );
+
+        return access.permissions()
                 .stream()
                 .anyMatch(
                         grant ->
@@ -29,58 +44,78 @@ public class AuthorizationDecisionService {
     }
 
     public boolean canAccessSelf(
-            AuthenticatedUserPrincipal principal,
+            UUID authenticatedUserId,
             PermissionCode permission,
             UUID requestedUserId
     ) {
-        if (principal == null
+        if (authenticatedUserId == null
                 || permission == null
                 || requestedUserId == null) {
             return false;
         }
 
         if (!Objects.equals(
-                principal.userId(),
+                authenticatedUserId,
                 requestedUserId
         )) {
             return false;
         }
 
+        ResolvedIdentityAccess access =
+                identityAccessService.resolveForUser(
+                        authenticatedUserId
+                );
+
         return hasGrant(
-                principal,
+                access,
                 permission,
                 PermissionScope.SELF
         ) || hasGrant(
-                principal,
+                access,
                 permission,
                 PermissionScope.GLOBAL
         );
     }
 
     public boolean canAccessGlobal(
-            AuthenticatedUserPrincipal principal,
+            UUID authenticatedUserId,
             PermissionCode permission
     ) {
+        if (authenticatedUserId == null
+                || permission == null) {
+            return false;
+        }
+
+        ResolvedIdentityAccess access =
+                identityAccessService.resolveForUser(
+                        authenticatedUserId
+                );
+
         return hasGrant(
-                principal,
+                access,
                 permission,
                 PermissionScope.GLOBAL
         );
     }
 
     public boolean canAccessAgency(
-            AuthenticatedUserPrincipal principal,
+            UUID authenticatedUserId,
             PermissionCode permission,
             UUID agencyId
     ) {
-        if (principal == null
+        if (authenticatedUserId == null
                 || permission == null
                 || agencyId == null) {
             return false;
         }
 
+        ResolvedIdentityAccess access =
+                identityAccessService.resolveForUser(
+                        authenticatedUserId
+                );
+
         if (hasGrant(
-                principal,
+                access,
                 permission,
                 PermissionScope.GLOBAL
         )) {
@@ -91,29 +126,44 @@ public class AuthorizationDecisionService {
          * UserAgencyAssignment will be implemented when
          * the real Agency aggregate is introduced in Phase 3.
          *
-         * Until then, AGENCY access must never be granted
-         * implicitly.
+         * Until then, AGENCY access remains fail-closed.
          */
         return false;
     }
 
+    public boolean hasRole(
+            UUID authenticatedUserId,
+            RoleCode role
+    ) {
+        if (authenticatedUserId == null
+                || role == null) {
+            return false;
+        }
+
+        ResolvedIdentityAccess access =
+                identityAccessService.resolveForUser(
+                        authenticatedUserId
+                );
+
+        return access.hasRole(role);
+    }
+
     private boolean hasGrant(
-            AuthenticatedUserPrincipal principal,
+            ResolvedIdentityAccess access,
             PermissionCode permission,
             PermissionScope scope
     ) {
-        if (principal == null
+        if (access == null
                 || permission == null
                 || scope == null) {
             return false;
         }
 
-        return principal.permissions()
-                .contains(
-                        new PermissionGrant(
-                                permission,
-                                scope
-                        )
-                );
+        return access.hasPermission(
+                new PermissionGrant(
+                        permission,
+                        scope
+                )
+        );
     }
 }

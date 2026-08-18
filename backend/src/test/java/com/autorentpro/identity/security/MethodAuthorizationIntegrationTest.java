@@ -1,7 +1,9 @@
 package com.autorentpro.identity.security;
 
 import com.autorentpro.identity.application.ActiveAccountStatusService;
+import com.autorentpro.identity.application.IdentityAccessService;
 import com.autorentpro.identity.application.PermissionGrant;
+import com.autorentpro.identity.application.ResolvedIdentityAccess;
 import com.autorentpro.identity.domain.model.PermissionCode;
 import com.autorentpro.identity.domain.model.PermissionScope;
 import com.autorentpro.identity.domain.model.RoleCode;
@@ -54,7 +56,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         UserRoleRepository.class,
         RolePermissionRepository.class,
         RoleRepository.class,
-        ActiveAccountStatusService.class
+        ActiveAccountStatusService.class,
+        IdentityAccessService.class
 })
 class MethodAuthorizationIntegrationTest {
 
@@ -63,6 +66,9 @@ class MethodAuthorizationIntegrationTest {
 
     @Autowired
     ActiveAccountStatusService activeAccountStatusService;
+
+    @Autowired
+    IdentityAccessService identityAccessService;
 
     @BeforeEach
     void allowSyntheticAuthenticatedUsers() {
@@ -102,9 +108,7 @@ class MethodAuthorizationIntegrationTest {
         Authentication authentication =
                 authenticationFor(
                         userId,
-                        Set.of(
-                                RoleCode.CLIENT
-                        ),
+                        Set.of(RoleCode.CLIENT),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.ACCOUNT_READ,
@@ -119,14 +123,10 @@ class MethodAuthorizationIntegrationTest {
                                 userId
                         )
                                 .with(
-                                        authentication(
-                                                authentication
-                                        )
+                                        authentication(authentication)
                                 )
                 )
-                .andExpect(
-                        status().isOk()
-                )
+                .andExpect(status().isOk())
                 .andExpect(
                         content().string(
                                 "account:" + userId
@@ -141,15 +141,10 @@ class MethodAuthorizationIntegrationTest {
         UUID authenticatedUserId =
                 UUID.randomUUID();
 
-        UUID requestedUserId =
-                UUID.randomUUID();
-
         Authentication authentication =
                 authenticationFor(
                         authenticatedUserId,
-                        Set.of(
-                                RoleCode.CLIENT
-                        ),
+                        Set.of(RoleCode.CLIENT),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.ACCOUNT_READ,
@@ -161,17 +156,13 @@ class MethodAuthorizationIntegrationTest {
         mockMvc.perform(
                         get(
                                 "/api/test/authorization/account/{userId}",
-                                requestedUserId
+                                UUID.randomUUID()
                         )
                                 .with(
-                                        authentication(
-                                                authentication
-                                        )
+                                        authentication(authentication)
                                 )
                 )
-                .andExpect(
-                        status().isForbidden()
-                )
+                .andExpect(status().isForbidden())
                 .andExpect(
                         jsonPath("$.code")
                                 .value("ACCESS_DENIED")
@@ -191,9 +182,7 @@ class MethodAuthorizationIntegrationTest {
         Authentication authentication =
                 authenticationFor(
                         managerId,
-                        Set.of(
-                                RoleCode.MANAGER
-                        ),
+                        Set.of(RoleCode.MANAGER),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.USER_READ,
@@ -208,14 +197,10 @@ class MethodAuthorizationIntegrationTest {
                                 requestedUserId
                         )
                                 .with(
-                                        authentication(
-                                                authentication
-                                        )
+                                        authentication(authentication)
                                 )
                 )
-                .andExpect(
-                        status().isOk()
-                )
+                .andExpect(status().isOk())
                 .andExpect(
                         content().string(
                                 "user:" + requestedUserId
@@ -230,9 +215,7 @@ class MethodAuthorizationIntegrationTest {
         Authentication authentication =
                 authenticationFor(
                         UUID.randomUUID(),
-                        Set.of(
-                                RoleCode.AGENCY_MANAGER
-                        ),
+                        Set.of(RoleCode.AGENCY_MANAGER),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.USER_READ,
@@ -247,14 +230,10 @@ class MethodAuthorizationIntegrationTest {
                                 UUID.randomUUID()
                         )
                                 .with(
-                                        authentication(
-                                                authentication
-                                        )
+                                        authentication(authentication)
                                 )
                 )
-                .andExpect(
-                        status().isForbidden()
-                )
+                .andExpect(status().isForbidden())
                 .andExpect(
                         jsonPath("$.code")
                                 .value("ACCESS_DENIED")
@@ -268,9 +247,7 @@ class MethodAuthorizationIntegrationTest {
         Authentication authentication =
                 authenticationFor(
                         UUID.randomUUID(),
-                        Set.of(
-                                RoleCode.CLIENT
-                        ),
+                        Set.of(RoleCode.CLIENT),
                         Set.of(
                                 new PermissionGrant(
                                         PermissionCode.ACCOUNT_READ,
@@ -285,14 +262,10 @@ class MethodAuthorizationIntegrationTest {
                                 UUID.randomUUID()
                         )
                                 .with(
-                                        authentication(
-                                                authentication
-                                        )
+                                        authentication(authentication)
                                 )
                 )
-                .andExpect(
-                        status().isForbidden()
-                )
+                .andExpect(status().isForbidden())
                 .andExpect(
                         jsonPath("$.code")
                                 .value("ACCESS_DENIED")
@@ -306,9 +279,7 @@ class MethodAuthorizationIntegrationTest {
         Authentication authentication =
                 authenticationFor(
                         UUID.randomUUID(),
-                        Set.of(
-                                RoleCode.ADMIN
-                        ),
+                        Set.of(RoleCode.ADMIN),
                         Set.of()
                 );
 
@@ -317,18 +288,12 @@ class MethodAuthorizationIntegrationTest {
                                 "/api/test/authorization/admin"
                         )
                                 .with(
-                                        authentication(
-                                                authentication
-                                        )
+                                        authentication(authentication)
                                 )
                 )
+                .andExpect(status().isOk())
                 .andExpect(
-                        status().isOk()
-                )
-                .andExpect(
-                        content().string(
-                                "admin"
-                        )
+                        content().string("admin")
                 );
     }
 
@@ -339,9 +304,7 @@ class MethodAuthorizationIntegrationTest {
         Authentication authentication =
                 authenticationFor(
                         UUID.randomUUID(),
-                        Set.of(
-                                RoleCode.CLIENT
-                        ),
+                        Set.of(RoleCode.CLIENT),
                         Set.of()
                 );
 
@@ -350,14 +313,10 @@ class MethodAuthorizationIntegrationTest {
                                 "/api/test/authorization/admin"
                         )
                                 .with(
-                                        authentication(
-                                                authentication
-                                        )
+                                        authentication(authentication)
                                 )
                 )
-                .andExpect(
-                        status().isForbidden()
-                )
+                .andExpect(status().isForbidden())
                 .andExpect(
                         jsonPath("$.code")
                                 .value("ACCESS_DENIED")
@@ -369,6 +328,17 @@ class MethodAuthorizationIntegrationTest {
             Set<RoleCode> roles,
             Set<PermissionGrant> permissions
     ) {
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                new ResolvedIdentityAccess(
+                        roles,
+                        permissions
+                )
+        );
+
         AuthenticatedUserPrincipal principal =
                 new AuthenticatedUserPrincipal(
                         userId,
@@ -454,7 +424,9 @@ class MethodAuthorizationIntegrationTest {
         }
 
         @PreAuthorize(
-                "hasRole('ADMIN')"
+                "@identityAuthorization.hasRole("
+                        + "authentication, "
+                        + "'ADMIN')"
         )
         String adminOnly() {
             return "admin";

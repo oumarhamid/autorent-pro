@@ -1,39 +1,53 @@
 package com.autorentpro.identity.security;
 
 import com.autorentpro.identity.application.AuthorizationDecisionService;
+import com.autorentpro.identity.application.IdentityAccessService;
 import com.autorentpro.identity.application.PermissionGrant;
+import com.autorentpro.identity.application.ResolvedIdentityAccess;
 import com.autorentpro.identity.domain.model.PermissionCode;
 import com.autorentpro.identity.domain.model.PermissionScope;
 import com.autorentpro.identity.domain.model.RoleCode;
-import com.autorentpro.identity.infrastructure.security.AuthenticatedUserPrincipal;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AuthorizationDecisionServiceTest {
 
+    private final IdentityAccessService identityAccessService =
+            mock(IdentityAccessService.class);
+
     private final AuthorizationDecisionService service =
-            new AuthorizationDecisionService();
+            new AuthorizationDecisionService(
+                    identityAccessService
+            );
 
     @Test
     void selfPermissionAllowsOwnResource() {
-        UUID userId = UUID.randomUUID();
+        UUID userId =
+                UUID.randomUUID();
 
-        AuthenticatedUserPrincipal principal =
-                principal(
-                        userId,
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.CLIENT),
                         new PermissionGrant(
                                 PermissionCode.ACCOUNT_READ,
                                 PermissionScope.SELF
                         )
-                );
+                )
+        );
 
         assertThat(
                 service.canAccessSelf(
-                        principal,
+                        userId,
                         PermissionCode.ACCOUNT_READ,
                         userId
                 )
@@ -42,18 +56,26 @@ class AuthorizationDecisionServiceTest {
 
     @Test
     void selfPermissionRejectsAnotherUserResource() {
-        AuthenticatedUserPrincipal principal =
-                principal(
-                        UUID.randomUUID(),
+        UUID authenticatedUserId =
+                UUID.randomUUID();
+
+        when(
+                identityAccessService.resolveForUser(
+                        authenticatedUserId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.CLIENT),
                         new PermissionGrant(
                                 PermissionCode.ACCOUNT_READ,
                                 PermissionScope.SELF
                         )
-                );
+                )
+        );
 
         assertThat(
                 service.canAccessSelf(
-                        principal,
+                        authenticatedUserId,
                         PermissionCode.ACCOUNT_READ,
                         UUID.randomUUID()
                 )
@@ -62,18 +84,26 @@ class AuthorizationDecisionServiceTest {
 
     @Test
     void globalPermissionAllowsGlobalAccess() {
-        AuthenticatedUserPrincipal principal =
-                principal(
-                        UUID.randomUUID(),
+        UUID userId =
+                UUID.randomUUID();
+
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.MANAGER),
                         new PermissionGrant(
                                 PermissionCode.USER_READ,
                                 PermissionScope.GLOBAL
                         )
-                );
+                )
+        );
 
         assertThat(
                 service.canAccessGlobal(
-                        principal,
+                        userId,
                         PermissionCode.USER_READ
                 )
         ).isTrue();
@@ -81,18 +111,26 @@ class AuthorizationDecisionServiceTest {
 
     @Test
     void agencyPermissionDoesNotGrantAccessBeforeAgencyAssignmentsExist() {
-        AuthenticatedUserPrincipal principal =
-                principal(
-                        UUID.randomUUID(),
+        UUID userId =
+                UUID.randomUUID();
+
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.AGENCY_MANAGER),
                         new PermissionGrant(
                                 PermissionCode.USER_READ,
                                 PermissionScope.AGENCY
                         )
-                );
+                )
+        );
 
         assertThat(
                 service.canAccessAgency(
-                        principal,
+                        userId,
                         PermissionCode.USER_READ,
                         UUID.randomUUID()
                 )
@@ -101,18 +139,26 @@ class AuthorizationDecisionServiceTest {
 
     @Test
     void globalPermissionAllowsAgencyResource() {
-        AuthenticatedUserPrincipal principal =
-                principal(
-                        UUID.randomUUID(),
+        UUID userId =
+                UUID.randomUUID();
+
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.MANAGER),
                         new PermissionGrant(
                                 PermissionCode.USER_READ,
                                 PermissionScope.GLOBAL
                         )
-                );
+                )
+        );
 
         assertThat(
                 service.canAccessAgency(
-                        principal,
+                        userId,
                         PermissionCode.USER_READ,
                         UUID.randomUUID()
                 )
@@ -121,21 +167,29 @@ class AuthorizationDecisionServiceTest {
 
     @Test
     void missingPermissionIsDenied() {
-        AuthenticatedUserPrincipal principal =
-                principal(
-                        UUID.randomUUID()
-                );
+        UUID userId =
+                UUID.randomUUID();
+
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.CLIENT)
+                )
+        );
 
         assertThat(
                 service.canAccessGlobal(
-                        principal,
+                        userId,
                         PermissionCode.USER_DISABLE
                 )
         ).isFalse();
     }
 
     @Test
-    void nullPrincipalIsDenied() {
+    void nullAuthenticatedUserIsDenied() {
         assertThat(
                 service.canAccessGlobal(
                         null,
@@ -144,16 +198,13 @@ class AuthorizationDecisionServiceTest {
         ).isFalse();
     }
 
-    private AuthenticatedUserPrincipal principal(
-            UUID userId,
+    private ResolvedIdentityAccess access(
+            Set<RoleCode> roles,
             PermissionGrant... grants
     ) {
-        return new AuthenticatedUserPrincipal(
-                userId,
-                "security-test@example.com",
-                Set.of(RoleCode.CLIENT),
-                Set.of(grants),
-                false
+        return new ResolvedIdentityAccess(
+                roles,
+                Set.of(grants)
         );
     }
 }

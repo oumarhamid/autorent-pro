@@ -2,6 +2,7 @@ package com.autorentpro.identity.infrastructure.security;
 
 import com.autorentpro.identity.application.AuthorizationDecisionService;
 import com.autorentpro.identity.domain.model.PermissionCode;
+import com.autorentpro.identity.domain.model.RoleCode;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -23,17 +24,17 @@ public class IdentityAuthorization {
             Authentication authentication,
             String permission
     ) {
-        AuthenticatedUserPrincipal principal =
-                extractPrincipal(authentication);
+        UUID authenticatedUserId =
+                extractUserId(authentication);
 
         PermissionCode permissionCode =
                 parsePermission(permission);
 
-        return principal != null
+        return authenticatedUserId != null
                 && permissionCode != null
                 && authorizationDecisionService
                         .hasPermission(
-                                principal,
+                                authenticatedUserId,
                                 permissionCode
                         );
     }
@@ -43,17 +44,17 @@ public class IdentityAuthorization {
             String permission,
             UUID requestedUserId
     ) {
-        AuthenticatedUserPrincipal principal =
-                extractPrincipal(authentication);
+        UUID authenticatedUserId =
+                extractUserId(authentication);
 
         PermissionCode permissionCode =
                 parsePermission(permission);
 
-        return principal != null
+        return authenticatedUserId != null
                 && permissionCode != null
                 && authorizationDecisionService
                         .canAccessSelf(
-                                principal,
+                                authenticatedUserId,
                                 permissionCode,
                                 requestedUserId
                         );
@@ -63,22 +64,62 @@ public class IdentityAuthorization {
             Authentication authentication,
             String permission
     ) {
-        AuthenticatedUserPrincipal principal =
-                extractPrincipal(authentication);
+        UUID authenticatedUserId =
+                extractUserId(authentication);
 
         PermissionCode permissionCode =
                 parsePermission(permission);
 
-        return principal != null
+        return authenticatedUserId != null
                 && permissionCode != null
                 && authorizationDecisionService
                         .canAccessGlobal(
-                                principal,
+                                authenticatedUserId,
                                 permissionCode
                         );
     }
 
-    private AuthenticatedUserPrincipal extractPrincipal(
+    public boolean canAccessAgency(
+            Authentication authentication,
+            String permission,
+            UUID agencyId
+    ) {
+        UUID authenticatedUserId =
+                extractUserId(authentication);
+
+        PermissionCode permissionCode =
+                parsePermission(permission);
+
+        return authenticatedUserId != null
+                && permissionCode != null
+                && authorizationDecisionService
+                        .canAccessAgency(
+                                authenticatedUserId,
+                                permissionCode,
+                                agencyId
+                        );
+    }
+
+    public boolean hasRole(
+            Authentication authentication,
+            String role
+    ) {
+        UUID authenticatedUserId =
+                extractUserId(authentication);
+
+        RoleCode roleCode =
+                parseRole(role);
+
+        return authenticatedUserId != null
+                && roleCode != null
+                && authorizationDecisionService
+                        .hasRole(
+                                authenticatedUserId,
+                                roleCode
+                        );
+    }
+
+    private UUID extractUserId(
             Authentication authentication
     ) {
         if (authentication == null
@@ -86,14 +127,15 @@ public class IdentityAuthorization {
             return null;
         }
 
-        Object principal = authentication.getPrincipal();
+        Object principal =
+                authentication.getPrincipal();
 
         if (!(principal
                 instanceof AuthenticatedUserPrincipal authenticatedUser)) {
             return null;
         }
 
-        return authenticatedUser;
+        return authenticatedUser.userId();
     }
 
     private PermissionCode parsePermission(
@@ -107,6 +149,23 @@ public class IdentityAuthorization {
         try {
             return PermissionCode.valueOf(
                     permission.trim()
+            );
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private RoleCode parseRole(
+            String role
+    ) {
+        if (role == null
+                || role.isBlank()) {
+            return null;
+        }
+
+        try {
+            return RoleCode.valueOf(
+                    role.trim()
             );
         } catch (IllegalArgumentException exception) {
             return null;
