@@ -4,6 +4,9 @@ import {
 import {
   createRoot,
 } from 'react-dom/client'
+import {
+  BrowserRouter,
+} from 'react-router'
 
 import App from './App.tsx'
 import {
@@ -15,8 +18,10 @@ createRoot(
   document.getElementById('root')!,
 ).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 )
