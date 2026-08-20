@@ -5,13 +5,17 @@ import {
 } from 'react-router'
 
 import {
-  GuestRoute,
-  PermissionRoute,
-  ProtectedRoute,
-} from './auth/RouteGuards'
+  ChangePasswordPage,
+} from './auth/ChangePasswordPage'
 import {
   LoginPage,
 } from './auth/LoginPage'
+import {
+  GuestRoute,
+  PasswordChangeRoute,
+  PermissionRoute,
+  ProtectedRoute,
+} from './auth/RouteGuards'
 import {
   AppShell,
 } from './layout/AppShell'
@@ -34,6 +38,15 @@ function App() {
         <Route
           path="/login"
           element={<LoginPage />}
+        />
+      </Route>
+
+      <Route
+        element={<PasswordChangeRoute />}
+      >
+        <Route
+          path="/change-password"
+          element={<ChangePasswordPage />}
         />
       </Route>
 

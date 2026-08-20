@@ -32,6 +32,24 @@ function AuthLoadingScreen() {
   )
 }
 
+function getRequestedAppPath(
+  state: unknown,
+): string | null {
+  const routeState =
+    state as {
+      from?: unknown
+    } | null
+
+  if (
+    typeof routeState?.from === 'string'
+    && routeState.from.startsWith('/app')
+  ) {
+    return routeState.from
+  }
+
+  return null
+}
+
 export function ProtectedRoute() {
   const {
     user,
@@ -63,6 +81,21 @@ export function ProtectedRoute() {
     )
   }
 
+  if (user.mustChangePassword) {
+    const requestedPath =
+      `${location.pathname}${location.search}${location.hash}`
+
+    return (
+      <Navigate
+        to="/change-password"
+        replace
+        state={{
+          from: requestedPath,
+        }}
+      />
+    )
+  }
+
   return <Outlet />
 }
 
@@ -83,20 +116,73 @@ export function GuestRoute() {
     status === 'authenticated'
     && user
   ) {
-    const state =
-      location.state as {
-        from?: unknown
-      } | null
-
     const requestedPath =
-      typeof state?.from === 'string'
-      && state.from.startsWith('/app')
-        ? state.from
-        : '/app'
+      getRequestedAppPath(
+        location.state,
+      )
+
+    if (user.mustChangePassword) {
+      return (
+        <Navigate
+          to="/change-password"
+          replace
+          state={{
+            from:
+              requestedPath
+              ?? '/app',
+          }}
+        />
+      )
+    }
 
     return (
       <Navigate
-        to={requestedPath}
+        to={
+          requestedPath
+          ?? '/app'
+        }
+        replace
+      />
+    )
+  }
+
+  return <Outlet />
+}
+
+export function PasswordChangeRoute() {
+  const {
+    user,
+    status,
+  } = useAuth()
+
+  const location =
+    useLocation()
+
+  if (status === 'loading') {
+    return <AuthLoadingScreen />
+  }
+
+  if (
+    status !== 'authenticated'
+    || !user
+  ) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    )
+  }
+
+  if (!user.mustChangePassword) {
+    return (
+      <Navigate
+        to={
+          getRequestedAppPath(
+            location.state,
+          )
+          ?? '/app'
+        }
         replace
       />
     )

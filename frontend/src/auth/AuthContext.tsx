@@ -7,6 +7,9 @@ import {
 } from 'react'
 
 import {
+  changePassword as changePasswordRequest,
+} from '../api/accountApi'
+import {
   getCurrentUser,
   login as loginRequest,
   logout as logoutRequest,
@@ -20,6 +23,7 @@ import {
   type AuthContextValue,
 } from './auth-context'
 import type {
+  ChangePasswordRequest,
   CurrentUser,
   LoginRequest,
 } from './auth.types'
@@ -42,6 +46,13 @@ export function AuthProvider({
   const [sessionError, setSessionError] =
     useState<string | null>(null)
 
+  const clearAuthentication =
+    useCallback(() => {
+      setUser(null)
+      setStatus('unauthenticated')
+      setSessionError(null)
+    }, [])
+
   const refreshUser =
     useCallback(
       async (): Promise<CurrentUser | null> => {
@@ -59,10 +70,7 @@ export function AuthProvider({
             isApiError(error)
             && error.status === 401
           ) {
-            setUser(null)
-            setStatus('unauthenticated')
-            setSessionError(null)
-
+            clearAuthentication()
             return null
           }
 
@@ -75,7 +83,9 @@ export function AuthProvider({
           return null
         }
       },
-      [],
+      [
+        clearAuthentication,
+      ],
     )
 
   useEffect(() => {
@@ -143,13 +153,49 @@ export function AuthProvider({
   const logout =
     useCallback(
       async (): Promise<void> => {
-        await logoutRequest()
+        try {
+          await logoutRequest()
+        } catch (error) {
+          if (
+            !isApiError(error)
+            || error.status !== 401
+          ) {
+            throw error
+          }
+        }
 
-        setUser(null)
-        setStatus('unauthenticated')
-        setSessionError(null)
+        clearAuthentication()
       },
-      [],
+      [
+        clearAuthentication,
+      ],
+    )
+
+  const changePassword =
+    useCallback(
+      async (
+        request: ChangePasswordRequest,
+      ): Promise<void> => {
+        try {
+          await changePasswordRequest(
+            request,
+          )
+        } catch (error) {
+          if (
+            isApiError(error)
+            && error.status === 401
+          ) {
+            clearAuthentication()
+          }
+
+          throw error
+        }
+
+        clearAuthentication()
+      },
+      [
+        clearAuthentication,
+      ],
     )
 
   const value =
@@ -166,6 +212,7 @@ export function AuthProvider({
 
         login,
         logout,
+        changePassword,
         refreshUser,
       }),
       [
@@ -174,6 +221,7 @@ export function AuthProvider({
         sessionError,
         login,
         logout,
+        changePassword,
         refreshUser,
       ],
     )

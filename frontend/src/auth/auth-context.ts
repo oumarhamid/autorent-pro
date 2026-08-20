@@ -3,6 +3,7 @@ import {
 } from 'react'
 
 import type {
+  ChangePasswordRequest,
   CurrentUser,
   LoginRequest,
 } from './auth.types'
@@ -23,6 +24,10 @@ export interface AuthContextValue {
   ) => Promise<CurrentUser>
 
   logout: () => Promise<void>
+
+  changePassword: (
+    request: ChangePasswordRequest,
+  ) => Promise<void>
 
   refreshUser: () => Promise<CurrentUser | null>
 }

@@ -1,4 +1,6 @@
-
+import {
+  useState,
+} from 'react'
 import {
   NavLink,
   Outlet,
@@ -14,7 +16,14 @@ import {
 export function AppShell() {
   const {
     user,
+    logout,
   } = useAuth()
+
+  const [isLoggingOut, setIsLoggingOut] =
+    useState(false)
+
+  const [logoutError, setLogoutError] =
+    useState<string | null>(null)
 
   if (!user) {
     return null
@@ -40,10 +49,29 @@ export function AppShell() {
           : 'text-slate-400 hover:bg-slate-800 hover:text-white',
       ].join(' ')
 
+  const handleLogout =
+    async (): Promise<void> => {
+      if (isLoggingOut) {
+        return
+      }
+
+      setIsLoggingOut(true)
+      setLogoutError(null)
+
+      try {
+        await logout()
+      } catch {
+        setLogoutError(
+          'La déconnexion a échoué. Veuillez réessayer.',
+        )
+        setIsLoggingOut(false)
+      }
+    }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="border-b border-slate-800 bg-slate-950/95">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.28em] text-emerald-400">
               AutoRent Pro
@@ -54,16 +82,42 @@ export function AppShell() {
             </p>
           </div>
 
-          <div className="text-right">
-            <p className="text-sm font-medium text-white">
-              {user.email}
-            </p>
+          <div className="flex items-center gap-5">
+            <div className="text-right">
+              <p className="text-sm font-medium text-white">
+                {user.email}
+              </p>
 
-            <p className="mt-1 text-xs text-slate-500">
-              {user.roles.join(', ')}
-            </p>
+              <p className="mt-1 text-xs text-slate-500">
+                {user.roles.join(', ')}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              disabled={isLoggingOut}
+              onClick={() => {
+                void handleLogout()
+              }}
+              className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoggingOut
+                ? 'Déconnexion…'
+                : 'Se déconnecter'}
+            </button>
           </div>
         </div>
+
+        {logoutError && (
+          <div className="mx-auto max-w-7xl px-6 pb-4">
+            <p
+              className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200"
+              role="alert"
+            >
+              {logoutError}
+            </p>
+          </div>
+        )}
       </header>
 
       <div className="mx-auto grid max-w-7xl md:grid-cols-[220px_1fr]">
