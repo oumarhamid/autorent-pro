@@ -399,7 +399,7 @@ Phase 14 — Fleet Intelligence
 
 - Phase 0 — Cadrage et architecture : **terminée**
 - Phase 1 — Fondation technique : **terminée**
-- Phase 2 — Authentification et sécurité : **prochaine étape**
+- Phase 2 — Authentification et sécurité : **terminée** — [Bilan Phase 2](docs/phases/phase-2-identity-security.md)
 
 ---
 
