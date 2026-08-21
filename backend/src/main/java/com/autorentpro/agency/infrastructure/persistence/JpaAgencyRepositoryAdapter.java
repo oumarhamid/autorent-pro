@@ -9,7 +9,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public class JpaAgencyRepositoryAdapter implements AgencyRepository {
+public class JpaAgencyRepositoryAdapter
+        implements AgencyRepository {
 
     private final SpringDataAgencyRepository repository;
 
@@ -21,28 +22,70 @@ public class JpaAgencyRepositoryAdapter implements AgencyRepository {
 
     @Override
     public Agency save(Agency agency) {
-        Objects.requireNonNull(agency, "agency must not be null");
+        Objects.requireNonNull(
+                agency,
+                "agency must not be null"
+        );
 
         return repository.save(agency);
     }
 
     @Override
-    public Optional<Agency> findById(UUID agencyId) {
-        Objects.requireNonNull(agencyId, "agencyId must not be null");
+    public Agency saveAndFlush(Agency agency) {
+        Objects.requireNonNull(
+                agency,
+                "agency must not be null"
+        );
+
+        return repository.saveAndFlush(agency);
+    }
+
+    @Override
+    public Optional<Agency> findById(
+            UUID agencyId
+    ) {
+        Objects.requireNonNull(
+                agencyId,
+                "agencyId must not be null"
+        );
 
         return repository.findById(agencyId);
     }
 
     @Override
-    public Optional<Agency> findByCode(String code) {
-        Objects.requireNonNull(code, "code must not be null");
+    public Optional<Agency> findForUpdateById(
+            UUID agencyId
+    ) {
+        Objects.requireNonNull(
+                agencyId,
+                "agencyId must not be null"
+        );
+
+        return repository.findForUpdateById(
+                agencyId
+        );
+    }
+
+    @Override
+    public Optional<Agency> findByCode(
+            String code
+    ) {
+        Objects.requireNonNull(
+                code,
+                "code must not be null"
+        );
 
         return repository.findByCode(code);
     }
 
     @Override
-    public boolean existsByCode(String code) {
-        Objects.requireNonNull(code, "code must not be null");
+    public boolean existsByCode(
+            String code
+    ) {
+        Objects.requireNonNull(
+                code,
+                "code must not be null"
+        );
 
         return repository.existsByCode(code);
     }

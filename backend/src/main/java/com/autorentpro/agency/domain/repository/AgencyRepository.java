@@ -9,7 +9,11 @@ public interface AgencyRepository {
 
     Agency save(Agency agency);
 
+    Agency saveAndFlush(Agency agency);
+
     Optional<Agency> findById(UUID agencyId);
+
+    Optional<Agency> findForUpdateById(UUID agencyId);
 
     Optional<Agency> findByCode(String code);
 
