@@ -1,6 +1,7 @@
 package com.autorentpro;
 
 import com.autorentpro.agency.domain.repository.AgencyRepository;
+import com.autorentpro.agency.domain.repository.UserAgencyAssignmentRepository;
 import com.autorentpro.identity.infrastructure.persistence.RolePermissionRepository;
 import com.autorentpro.identity.infrastructure.persistence.RoleRepository;
 import com.autorentpro.identity.infrastructure.persistence.UserAccountRepository;
@@ -17,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
         UserRoleRepository.class,
         RolePermissionRepository.class,
         AgencyRepository.class,
+        UserAgencyAssignmentRepository.class,
         RoleRepository.class
 })
 class AutorentBackendApplicationTests {
