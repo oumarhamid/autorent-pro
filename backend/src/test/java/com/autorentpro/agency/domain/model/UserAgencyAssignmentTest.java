@@ -107,7 +107,7 @@ class UserAgencyAssignmentTest {
         assertThat(assignment.isActive()).isTrue();
         assertThat(assignment.getEndedAt()).isNull();
         assertThat(assignment.getAssignedAt())
-                .isAfterOrEqualTo(previousAssignedAt);
+                .isEqualTo(previousAssignedAt);
     }
 
     @Test

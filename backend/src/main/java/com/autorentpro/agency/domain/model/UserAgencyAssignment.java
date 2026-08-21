@@ -92,7 +92,6 @@ public class UserAgencyAssignment {
         Instant now = Instant.now();
 
         this.active = true;
-        this.assignedAt = now;
         this.endedAt = null;
         this.updatedAt = now;
 
