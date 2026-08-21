@@ -1,0 +1,109 @@
+INSERT INTO identity_permissions (
+    id,
+    code,
+    created_at,
+    updated_at
+)
+VALUES
+    (
+        '20000000-0000-0000-0000-000000000010',
+        'AGENCY_READ',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        '20000000-0000-0000-0000-000000000011',
+        'AGENCY_CREATE',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        '20000000-0000-0000-0000-000000000012',
+        'AGENCY_UPDATE',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        '20000000-0000-0000-0000-000000000013',
+        'AGENCY_ENABLE',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        '20000000-0000-0000-0000-000000000014',
+        'AGENCY_DISABLE',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    );
+
+
+INSERT INTO identity_role_permissions (
+    id,
+    role_id,
+    permission_id,
+    scope,
+    created_at,
+    updated_at
+)
+VALUES
+    -- FLEET_MANAGER can resolve agencies globally
+    (
+        '30000000-0000-0000-0000-000000000022',
+        '10000000-0000-0000-0000-000000000004',
+        '20000000-0000-0000-0000-000000000010',
+        'GLOBAL',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+
+    -- MANAGER has global agency visibility
+    (
+        '30000000-0000-0000-0000-000000000023',
+        '10000000-0000-0000-0000-000000000005',
+        '20000000-0000-0000-0000-000000000010',
+        'GLOBAL',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+
+    -- ADMIN owns all Agency administration operations
+    (
+        '30000000-0000-0000-0000-000000000024',
+        '10000000-0000-0000-0000-000000000006',
+        '20000000-0000-0000-0000-000000000010',
+        'GLOBAL',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        '30000000-0000-0000-0000-000000000025',
+        '10000000-0000-0000-0000-000000000006',
+        '20000000-0000-0000-0000-000000000011',
+        'GLOBAL',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        '30000000-0000-0000-0000-000000000026',
+        '10000000-0000-0000-0000-000000000006',
+        '20000000-0000-0000-0000-000000000012',
+        'GLOBAL',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        '30000000-0000-0000-0000-000000000027',
+        '10000000-0000-0000-0000-000000000006',
+        '20000000-0000-0000-0000-000000000013',
+        'GLOBAL',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        '30000000-0000-0000-0000-000000000028',
+        '10000000-0000-0000-0000-000000000006',
+        '20000000-0000-0000-0000-000000000014',
+        'GLOBAL',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    );

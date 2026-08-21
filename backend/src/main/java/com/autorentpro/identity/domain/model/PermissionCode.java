@@ -1,6 +1,7 @@
 package com.autorentpro.identity.domain.model;
 
 public enum PermissionCode {
+
     ACCOUNT_READ,
     ACCOUNT_CHANGE_PASSWORD,
 
@@ -10,5 +11,11 @@ public enum PermissionCode {
     USER_ENABLE,
     USER_DISABLE,
     USER_ROLE_ASSIGN,
-    USER_AGENCY_ASSIGN
+    USER_AGENCY_ASSIGN,
+
+    AGENCY_READ,
+    AGENCY_CREATE,
+    AGENCY_UPDATE,
+    AGENCY_ENABLE,
+    AGENCY_DISABLE
 }

@@ -106,8 +106,8 @@ class AutorentBackendPostgresIntegrationTest {
         );
 
         assertThat(roles).isEqualTo(6L);
-        assertThat(permissions).isEqualTo(9L);
-        assertThat(rolePermissions).isEqualTo(21L);
+        assertThat(permissions).isEqualTo(14L);
+        assertThat(rolePermissions).isEqualTo(28L);
     }
 
     @Test
@@ -198,7 +198,7 @@ class AutorentBackendPostgresIntegrationTest {
                 .containsExactly(RoleCode.ADMIN);
 
         assertThat(access.permissions())
-                .hasSize(9)
+                .hasSize(14)
                 .contains(
                         new PermissionGrant(
                                 PermissionCode.ACCOUNT_READ,
