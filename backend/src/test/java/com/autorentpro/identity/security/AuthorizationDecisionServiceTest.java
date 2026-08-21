@@ -1,5 +1,6 @@
 package com.autorentpro.identity.security;
 
+import com.autorentpro.identity.application.AgencyScopeMembershipResolver;
 import com.autorentpro.identity.application.AuthorizationDecisionService;
 import com.autorentpro.identity.application.IdentityAccessService;
 import com.autorentpro.identity.application.PermissionGrant;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AuthorizationDecisionServiceTest {
@@ -21,9 +23,14 @@ class AuthorizationDecisionServiceTest {
     private final IdentityAccessService identityAccessService =
             mock(IdentityAccessService.class);
 
+    private final AgencyScopeMembershipResolver
+            agencyScopeMembershipResolver =
+            mock(AgencyScopeMembershipResolver.class);
+
     private final AuthorizationDecisionService service =
             new AuthorizationDecisionService(
-                    identityAccessService
+                    identityAccessService,
+                    agencyScopeMembershipResolver
             );
 
     @Test
@@ -110,8 +117,11 @@ class AuthorizationDecisionServiceTest {
     }
 
     @Test
-    void agencyPermissionDoesNotGrantAccessBeforeAgencyAssignmentsExist() {
+    void agencyPermissionAllowsActiveMembership() {
         UUID userId =
+                UUID.randomUUID();
+
+        UUID agencyId =
                 UUID.randomUUID();
 
         when(
@@ -128,17 +138,64 @@ class AuthorizationDecisionServiceTest {
                 )
         );
 
+        when(
+                agencyScopeMembershipResolver
+                        .hasActiveMembership(
+                                userId,
+                                agencyId
+                        )
+        ).thenReturn(true);
+
         assertThat(
                 service.canAccessAgency(
                         userId,
                         PermissionCode.USER_READ,
-                        UUID.randomUUID()
+                        agencyId
+                )
+        ).isTrue();
+    }
+
+    @Test
+    void agencyPermissionRejectsMissingMembership() {
+        UUID userId =
+                UUID.randomUUID();
+
+        UUID agencyId =
+                UUID.randomUUID();
+
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.AGENCY_MANAGER),
+                        new PermissionGrant(
+                                PermissionCode.USER_READ,
+                                PermissionScope.AGENCY
+                        )
+                )
+        );
+
+        when(
+                agencyScopeMembershipResolver
+                        .hasActiveMembership(
+                                userId,
+                                agencyId
+                        )
+        ).thenReturn(false);
+
+        assertThat(
+                service.canAccessAgency(
+                        userId,
+                        PermissionCode.USER_READ,
+                        agencyId
                 )
         ).isFalse();
     }
 
     @Test
-    void globalPermissionAllowsAgencyResource() {
+    void globalPermissionAllowsAgencyResourceWithoutMembershipLookup() {
         UUID userId =
                 UUID.randomUUID();
 
@@ -163,6 +220,81 @@ class AuthorizationDecisionServiceTest {
                         UUID.randomUUID()
                 )
         ).isTrue();
+
+        verifyNoInteractions(
+                agencyScopeMembershipResolver
+        );
+    }
+
+    @Test
+    void membershipWithoutAgencyPermissionIsDenied() {
+        UUID userId =
+                UUID.randomUUID();
+
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.AGENCY_MANAGER)
+                )
+        );
+
+        assertThat(
+                service.canAccessAgency(
+                        userId,
+                        PermissionCode.USER_READ,
+                        UUID.randomUUID()
+                )
+        ).isFalse();
+
+        verifyNoInteractions(
+                agencyScopeMembershipResolver
+        );
+    }
+
+    @Test
+    void membershipResolutionFailureIsDenied() {
+        UUID userId =
+                UUID.randomUUID();
+
+        UUID agencyId =
+                UUID.randomUUID();
+
+        when(
+                identityAccessService.resolveForUser(
+                        userId
+                )
+        ).thenReturn(
+                access(
+                        Set.of(RoleCode.AGENCY_MANAGER),
+                        new PermissionGrant(
+                                PermissionCode.USER_READ,
+                                PermissionScope.AGENCY
+                        )
+                )
+        );
+
+        when(
+                agencyScopeMembershipResolver
+                        .hasActiveMembership(
+                                userId,
+                                agencyId
+                        )
+        ).thenThrow(
+                new IllegalStateException(
+                        "membership lookup unavailable"
+                )
+        );
+
+        assertThat(
+                service.canAccessAgency(
+                        userId,
+                        PermissionCode.USER_READ,
+                        agencyId
+                )
+        ).isFalse();
     }
 
     @Test
@@ -200,11 +332,11 @@ class AuthorizationDecisionServiceTest {
 
     private ResolvedIdentityAccess access(
             Set<RoleCode> roles,
-            PermissionGrant... grants
+            PermissionGrant... permissions
     ) {
         return new ResolvedIdentityAccess(
                 roles,
-                Set.of(grants)
+                Set.of(permissions)
         );
     }
 }

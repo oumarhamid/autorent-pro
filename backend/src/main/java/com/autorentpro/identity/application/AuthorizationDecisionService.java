@@ -11,13 +11,22 @@ import java.util.UUID;
 @Service("authorizationDecisionService")
 public class AuthorizationDecisionService {
 
-    private final IdentityAccessService identityAccessService;
+    private final IdentityAccessService
+            identityAccessService;
+
+    private final AgencyScopeMembershipResolver
+            agencyScopeMembershipResolver;
 
     public AuthorizationDecisionService(
-            IdentityAccessService identityAccessService
+            IdentityAccessService identityAccessService,
+            AgencyScopeMembershipResolver
+                    agencyScopeMembershipResolver
     ) {
         this.identityAccessService =
                 identityAccessService;
+
+        this.agencyScopeMembershipResolver =
+                agencyScopeMembershipResolver;
     }
 
     public boolean hasPermission(
@@ -114,6 +123,10 @@ public class AuthorizationDecisionService {
                         authenticatedUserId
                 );
 
+        /*
+         * GLOBAL always dominates an agency-scoped
+         * membership requirement.
+         */
         if (hasGrant(
                 access,
                 permission,
@@ -123,12 +136,35 @@ public class AuthorizationDecisionService {
         }
 
         /*
-         * UserAgencyAssignment will be implemented when
-         * the real Agency aggregate is introduced in Phase 3.
-         *
-         * Until then, AGENCY access remains fail-closed.
+         * Membership alone never grants access.
+         * The user must first possess the requested
+         * permission with AGENCY scope.
          */
-        return false;
+        if (!hasGrant(
+                access,
+                permission,
+                PermissionScope.AGENCY
+        )) {
+            return false;
+        }
+
+        /*
+         * Agency membership is resolved from the
+         * current source of truth.
+         *
+         * Authorization must fail closed if the
+         * membership resolver cannot provide a
+         * reliable answer.
+         */
+        try {
+            return agencyScopeMembershipResolver
+                    .hasActiveMembership(
+                            authenticatedUserId,
+                            agencyId
+                    );
+        } catch (RuntimeException exception) {
+            return false;
+        }
     }
 
     public boolean hasRole(
