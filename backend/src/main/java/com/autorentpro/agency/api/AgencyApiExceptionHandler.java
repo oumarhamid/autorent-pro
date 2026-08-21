@@ -24,10 +24,14 @@ public class AgencyApiExceptionHandler {
     ) {
         HttpStatus status =
                 switch (exception.getCode()) {
-                    case "AGENCY_NOT_FOUND" ->
+                    case "AGENCY_NOT_FOUND",
+                         "USER_NOT_FOUND",
+                         "USER_AGENCY_ASSIGNMENT_NOT_FOUND" ->
                             HttpStatus.NOT_FOUND;
 
-                    case "AGENCY_CODE_ALREADY_IN_USE" ->
+                    case "AGENCY_CODE_ALREADY_IN_USE",
+                         "AGENCY_INACTIVE",
+                         "USER_AGENCY_ASSIGNMENT_CONFLICT" ->
                             HttpStatus.CONFLICT;
 
                     default ->
