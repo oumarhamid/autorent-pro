@@ -1,5 +1,6 @@
 package com.autorentpro.identity.security;
 
+import com.autorentpro.agency.domain.repository.AgencyRepository;
 import com.autorentpro.identity.infrastructure.persistence.RolePermissionRepository;
 import com.autorentpro.identity.infrastructure.persistence.RoleRepository;
 import com.autorentpro.identity.infrastructure.persistence.UserAccountRepository;
@@ -26,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         UserAccountRepository.class,
         UserRoleRepository.class,
         RolePermissionRepository.class,
+        AgencyRepository.class,
         RoleRepository.class
 })
 class SecurityConfigurationIntegrationTest {
